@@ -35,7 +35,6 @@ classdef BackPropLayer < handle
             this.aLayers{1} = input;
             for i = 1 : size(this.layers,2)
                 parameterM = this.layers{i};
-                disp(parameterM);
                 % this.aLayers{i} is the ath input parameter
                 % from first to end - 1 columns are the weight matrix
                 % with the last column as bias 
@@ -63,10 +62,12 @@ classdef BackPropLayer < handle
         end
         
         function print(this)
-            disp("Weight Matrix:");
-            disp(this.wMat);
-            disp("Bias Vector:");
-            disp(this.bVect);
+            for i = 1 : size(this.layers,2)     
+                disp("Weight Matrix for layer " + i);
+                disp(this.layers{i}(:,1:end-1));
+                disp("Bias Vector for layer " + i);
+                disp(this.layers{i}(end));
+            end
         end
     end
 end
