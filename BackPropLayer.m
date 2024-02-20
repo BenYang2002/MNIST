@@ -57,7 +57,21 @@ classdef BackPropLayer < handle
                 this.aLayers{i+1} = layerOut;
             end
             output = this.aLayers{end};
+            output = this.modifyOutput(output);
             this.prediction = output;
+        end
+
+        function output = modifyOutput(this,input)
+            max = 0;
+            out = 0;
+            for i = 1:size(input,1)
+                if max < input(i)
+                    max = input(i);
+                    out = i;
+                end
+            end
+            output = zeros(size(input,1),1);
+            output(out) = 1;
         end
 
         function der = takeDeravative(this,funcName,input)
@@ -76,7 +90,7 @@ classdef BackPropLayer < handle
             % expectedM each column is one corresponding expected output
             iter = 0 ;
             correct = false;
-            while (iter < 1000 || correct)
+            while (~correct && iter < 1000)
                 correct = true;
                 for i = 1 : size(inputMatrix,2)
                     input = inputMatrix(:,i);
