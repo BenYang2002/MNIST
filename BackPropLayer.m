@@ -97,7 +97,7 @@ classdef BackPropLayer < handle
                     ex = expectedM(:,i);
                     this.forward(input);
                     this.backwardUpdate(input,ex);
-                    if this.prediction ~= expectedM(:,i)
+                    if ~isequal(this.prediction,expectedM(:,i))
                         disp("error:");
                         disp("predicion is");
                         disp(this.prediction);
