@@ -71,8 +71,19 @@ classdef BackPropLayer < handle
             end
         end
 
+        function train(this, inputMatrix)
+            % inputMatrix assume that each column is an input
+            for i = 1 : size(inputMatrix,2)
+                input = inputMatrix(:,i);
+                this.forward(input);
+                this.backwardUpdate(input);
+            end
+        end
+
         function backwardUpdate(this, input)
              %%Compare # of neurons to size of error vector
+             % This is the function that updates the weight_matrix based 
+             % on a single input
              errorOut = this.expectedOut - this.prediction;
              der = this.takeDeravative(this.transfer,input);
              sM = -2 * der * (errorOut); % calculated the sensitivity for 
@@ -82,7 +93,6 @@ classdef BackPropLayer < handle
              % calculate all sensitivity
              for i = size(this.layers,2) : 2
                 netV = cell2mat(this.nLayers(:,i));
-                disp(netV);
                 der = this.takeDeravative(this.transfer,netV);
                 sCurrent = der * this.layers{i}(:,1:end-1) * prevSense;
                 % sCurrent is the sensitivity of the current layer
