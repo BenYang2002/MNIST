@@ -21,10 +21,16 @@ classdef BackPropLayer < handle
         sensitivity_Matrix % sensitivity_Matrix is a numeric matrix
         % each column is the corresponding layer's sensitivity
         learning_rate
+        acceptance_rate % after reaching the rate, we will cast the 
+        % output vector and make a prediction
+        % eg. if ar = 0.95, only an output element has a value larger than
+        % 0.95 that we say the element is the correct output
+        % [0.2,0.2,0.6] = [0.2,0.2,0.6] we don't make prediction
+        % [0.01,0.01,0.98] = [0,0,1] we predict it's 2
     end
     methods
         function this = BackPropLayer(wMat11,wMat12,wMat21,wMat22 ...
-                ,learning_rate,transfer)
+                ,learning_rate,transfer,acceptance)
             %BACKPROPLAYER Construct an instance of this class
             %   wMati1 : the first dimension/num of rows of layer i 
             %   wMati2 : the second dimension/num of columns of layer
@@ -37,6 +43,7 @@ classdef BackPropLayer < handle
             this.layers{2} = [this.wMat2,this.bVect2];
             this.learning_rate = learning_rate;
             this.transfer = transfer;
+            this.acceptance_rate = acceptance;
         end
 
         function [output] = forward(this, input)
@@ -70,8 +77,12 @@ classdef BackPropLayer < handle
                     out = i;
                 end
             end
-            output = zeros(size(input,1),1);
-            output(out) = 1;
+            if (max > this.acceptance_rate)
+                output = zeros(size(input,1),1);
+                output(out) = 1;
+                return;
+            end
+            output = input;
         end
 
         function der = takeDeravative(this,funcName,input)
