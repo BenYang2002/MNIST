@@ -16,7 +16,6 @@ classdef BackPropLayer < handle
         % output
         nLayers         % nlayers is a cell arrya
         % nLayers{i} contains the netinput of layer i
-        expectedOut
         prediction
         feedVect
         sensitivity_Matrix % sensitivity_Matrix is a numeric matrix
@@ -25,7 +24,7 @@ classdef BackPropLayer < handle
     end
     methods
         function this = BackPropLayer(wMat11,wMat12,wMat21,wMat22 ...
-                ,expectedOut,learning_rate,transfer)
+                ,learning_rate,transfer)
             %BACKPROPLAYER Construct an instance of this class
             %   wMati1 : the first dimension/num of rows of layer i 
             %   wMati2 : the second dimension/num of columns of layer
@@ -36,7 +35,6 @@ classdef BackPropLayer < handle
             this.bVect2 = rand(wMat21,1);
             this.layers{1} = [this.wMat1,this.bVect1];
             this.layers{2} = [this.wMat2,this.bVect2];
-            this.expectedOut = expectedOut;
             this.learning_rate = learning_rate;
             this.transfer = transfer;
         end
@@ -71,40 +69,60 @@ classdef BackPropLayer < handle
             end
         end
 
-        function train(this, inputMatrix)
+        function train(this, inputMatrix, expectedM)
+            % sample training 
+            % TODO : Decide whether to update the terminating condition
             % inputMatrix assume that each column is an input
-            for i = 1 : size(inputMatrix,2)
-                input = inputMatrix(:,i);
-                this.forward(input);
-                this.backwardUpdate(input);
+            % expectedM each column is one corresponding expected output
+            iter = 0 ;
+            correct = false;
+            while (iter < 1000 || correct)
+                correct = true;
+                for i = 1 : size(inputMatrix,2)
+                    input = inputMatrix(:,i);
+                    ex = expectedM(:,i);
+                    this.forward(input);
+                    this.backwardUpdate(input,ex);
+                    if this.prediction ~= expectedM(:,i)
+                        disp("error:");
+                        disp("predicion is");
+                        disp(this.prediction);
+                        disp("expected output is");
+                        disp(expectedM(:,i));
+                        correct = false;
+                    end
+                    iter = iter + 1;
+                    disp("iter: " + iter);
+                end
             end
         end
 
-        function backwardUpdate(this, input)
+        function backwardUpdate(this, input,expectedOut)
              %%Compare # of neurons to size of error vector
              % This is the function that updates the weight_matrix based 
              % on a single input
-             errorOut = this.expectedOut - this.prediction;
+             errorOut = expectedOut - this.prediction;
              der = this.takeDeravative(this.transfer,input);
-             sM = -2 * der * (errorOut); % calculated the sensitivity for 
+             sM = -2 * der * (errorOut); % calculated the sensitivity for
              % the last layer
-             this.sensitivity_Matrix = [sM];
-             prevSense = this.sensitivity_Matrix;
+             this.sensitivity_Matrix{size(this.layers,2)} = [sM];
+             prevSense = this.sensitivity_Matrix{end};
              % calculate all sensitivity
              for i = size(this.layers,2) : 2
                 netV = cell2mat(this.nLayers(:,i));
                 der = this.takeDeravative(this.transfer,netV);
-                sCurrent = der * this.layers{i}(:,1:end-1) * prevSense;
+                sCurrent = der * this.layers{i}(:,1:end-1)' * prevSense;
                 % sCurrent is the sensitivity of the current layer
                 prevSense = sCurrent; 
-                this.sensitivity_Matrix = [sCurrent,this.sensitivity_Matrix];
+                this.sensitivity_Matrix{i-1} = ...
+                    sCurrent;
              end
              % now we have the sensitivity matrix 
              % update weight matrix and bias
              for i = 1 : size(this.layers,2) 
                 wM = this.layers{i}(:,1:end - 1); % weight matrix
                 b = this.layers{i}(:,end); % bias
-                s = this.sensitivity_Matrix(i);
+                s = this.sensitivity_Matrix{i};
                 prevA = (this.aLayers{i})';
                 wM = wM - this.learning_rate * s * prevA;
                 b = b - this.learning_rate * s;
