@@ -3,16 +3,17 @@ labels = loadMNISTLabels('/MATLAB Drive/BackPropagation/train-labels.idx1-ubyte'
 labels = labels';
 images = loadMNISTImages('/MATLAB Drive/BackPropagation/train-images.idx3-ubyte');
 trainingTimes = 1;
-learning_rate = 0.01;
+learning_rate = 0.02;
 istraining = true;
 isMNIST = true;
-obj_MNIST = BackPropLayer(100,784,10,100,learning_rate,"sigmoid",1,true, ...
+obj_MNIST = BackPropLayer(1000,784,10,1000,learning_rate,"sigmoid",1,true, ...
     trainingTimes,isMNIST);
 obj_MNIST.train(images,labels);
 
 % Testing
 testing_labels = loadMNISTLabels('/MATLAB Drive/BackPropagation/t10k-labels.idx1-ubyte');
 testing_labels = testing_labels';
+obj_MNIST.acceptance_rate = 0.01;
 testing_images = loadMNISTImages('/MATLAB Drive/BackPropagation/t10k-images.idx3-ubyte');
 obj_MNIST.training = false;
 correctCount = zeros(1,10);
