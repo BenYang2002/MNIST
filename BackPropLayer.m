@@ -145,6 +145,13 @@ classdef BackPropLayer < handle
                         correct = false;
                     end
                 end
+                ex = expectedM(:, size(inputMatrix, 2));
+                pIndex = (ex - this.prediction) * (ex - this.prediction).';
+                plot(zeros(length(this.prediction), 1) + epoch, pIndex);
+                if mod(epoch, 20) == 0
+                    drawnow();
+                end
+                hold on
                 epoch = epoch + 1;
             end
         end
