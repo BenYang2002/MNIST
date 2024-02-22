@@ -9,7 +9,10 @@ output_matrix = [1,0,0;0,1,0;0,0,1];
 input_matrix = [input0,input1,input2];
 
 % testing for correctness
-obj_sample = BackPropLayer(6,30,3,6,0.01,"sigmoid",0.95,true);
+trainingTimes = 100000;
+weightRows = [6,3];
+weightColumns = [30,6];
+obj_sample = BackPropLayer(weightRows,weightColumns,0.01,"sigmoid",1,true,trainingTimes,false);
 obj_sample.train(input_matrix,output_matrix);
 
 flip = 2;
