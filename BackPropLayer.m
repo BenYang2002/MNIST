@@ -45,19 +45,22 @@ classdef BackPropLayer < handle
 
     end
     methods
-        function this = BackPropLayer(wMat11,wMat12,wMat21,wMat22, ...
+        function this = BackPropLayer(weightRow, weightColumn, ...
                 learning_rate,transfer,acceptance, training, ...
                 trainingTimes,MNIST)
             %BACKPROPLAYER Construct an instance of this class
             %   wMati1 : the first dimension/num of rows of layer i 
             %   wMati2 : the second dimension/num of columns of layer
             %   i 
-            this.wMat1 = rand(wMat11,wMat12) * 0.1;
-            this.wMat2 = rand(wMat21,wMat22) * 0.1;
-            this.bVect1 = rand(wMat11,1);
-            this.bVect2 = rand(wMat21,1);
-            this.layers{1} = [this.wMat1,this.bVect1];
-            this.layers{2} = [this.wMat2,this.bVect2];
+            if (size(weightRow,2) ~= size(weightColumn,2))
+                error("dimention of weightRow and weightColumn " + ...
+                    "doesn't match");
+            end
+            for i = 1 : size(weightColumn,2)
+                weightMatrix = rand(weightRow(i),weightColumn(i)) * 0.1;
+                biasVec = rand(weightRow(i),1);
+                this.layers{i} = [weightMatrix,biasVec];
+            end
             this.learning_rate = learning_rate;
             this.transfer = transfer;
             this.acceptance_rate = acceptance;
@@ -127,7 +130,7 @@ classdef BackPropLayer < handle
             correct = false;
             while (~correct && epoch <= this.trainingTimes)
                 correct = true;                   
-                disp("iter: " + epoch);
+                disp("epoch: " + epoch);
                 iter = 1;
                 for i = 1 : size(inputMatrix,2)
                     disp("iter: " + iter);
