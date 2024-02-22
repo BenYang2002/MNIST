@@ -10,27 +10,44 @@ classdef BackPropLayer < handle
         wMat2
         bVect1
         bVect2
+
         aLayers         % aLayers is a cell array
         % aLayers{i} contains the output of layer i + 1
         % eg aLayer{i} = a(i+1) and the input is counted as the first
         % output
+
         nLayers         % nlayers is a cell arrya
         % nLayers{i} contains the netinput of layer i
+
         prediction
+
         feedVect
         sensitivity_Matrix % sensitivity_Matrix is a numeric matrix
         % each column is the corresponding layer's sensitivity
+
         learning_rate
+
         acceptance_rate % after reaching the rate, we will cast the 
         % output vector and make a prediction
         % eg. if ar = 0.95, only an output element has a value larger than
         % 0.95 that we say the element is the correct output
         % [0.2,0.2,0.6] = [0.2,0.2,0.6] we don't make prediction
         % [0.01,0.01,0.98] = [0,0,1] we predict it's 2
+
+        training      % this boolean indicates whether it is training or in 
+        % predicion mode. In prediction mode, solution will always be
+        % casted
+        
+        trainingTimes % number of max times going through the training set
+
+        MNIST         % boolean that is used to modify output from a vector
+        % to a real number. eg. [0,0,1,0,0,0,0,0,0,0] to 3;
+
     end
     methods
-        function this = BackPropLayer(wMat11,wMat12,wMat21,wMat22 ...
-                ,learning_rate,transfer,acceptance)
+        function this = BackPropLayer(wMat11,wMat12,wMat21,wMat22, ...
+                learning_rate,transfer,acceptance, training, ...
+                trainingTimes,MNIST)
             %BACKPROPLAYER Construct an instance of this class
             %   wMati1 : the first dimension/num of rows of layer i 
             %   wMati2 : the second dimension/num of columns of layer
@@ -44,6 +61,9 @@ classdef BackPropLayer < handle
             this.learning_rate = learning_rate;
             this.transfer = transfer;
             this.acceptance_rate = acceptance;
+            this.training = training;
+            this.trainingTimes = trainingTimes;
+            this.MNIST = MNIST;
         end
 
         function [output] = forward(this, input)
@@ -77,7 +97,11 @@ classdef BackPropLayer < handle
                     out = i;
                 end
             end
-            if (max > this.acceptance_rate)
+            if (max > this.acceptance_rate || ~this.training)
+                if (this.MNIST)
+                    output = out - 1;
+                    return;
+                end
                 output = zeros(size(input,1),1);
                 output(out) = 1;
                 return;
@@ -99,26 +123,29 @@ classdef BackPropLayer < handle
             % TODO : Decide whether to update the terminating condition
             % inputMatrix assume that each column is an input
             % expectedM each column is one corresponding expected output
-            iter = 0 ;
+            epoch = 1 ;
             correct = false;
-            while (~correct && iter < 1000)
-                correct = true;
+            while (~correct && epoch <= this.trainingTimes)
+                correct = true;                   
+                disp("iter: " + epoch);
+                iter = 1;
                 for i = 1 : size(inputMatrix,2)
+                    disp("iter: " + iter);
+                    iter = iter + 1;
                     input = inputMatrix(:,i);
                     ex = expectedM(:,i);
                     this.forward(input);
                     this.backwardUpdate(input,ex);
                     if ~isequal(this.prediction,expectedM(:,i))
-                        disp("error:");
-                        disp("predicion is");
-                        disp(this.prediction);
-                        disp("expected output is");
-                        disp(expectedM(:,i));
+                        %disp("error:");
+                        %disp("predicion is");
+                        %disp(this.prediction);
+                        %disp("expected output is");
+                        %disp(expectedM(:,i));
                         correct = false;
                     end
-                    iter = iter + 1;
-                    disp("iter: " + iter);
                 end
+                epoch = epoch + 1;
             end
         end
 
@@ -126,6 +153,12 @@ classdef BackPropLayer < handle
              %%Compare # of neurons to size of error vector
              % This is the function that updates the weight_matrix based 
              % on a single input
+             if (this.MNIST)
+                 exOutMod = zeros(10,1);
+                 exOutMod(expectedOut+1) = 1; 
+                 expectedOut = exOutMod; % we map the output from a scalar 
+                 % to the vector
+             end
              errorOut = expectedOut - this.prediction;
              der = this.takeDeravative(this.transfer,input);
              sM = -2 * der * (errorOut); % calculated the sensitivity for
