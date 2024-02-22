@@ -6,8 +6,11 @@ trainingTimes = 1;
 learning_rate = 0.02;
 istraining = true;
 isMNIST = true;
-obj_MNIST = BackPropLayer(1000,784,10,1000,learning_rate,"sigmoid",1,true, ...
-    trainingTimes,isMNIST);
+weightRows = [1000,10];
+weightColumns = [784,1000];
+acceptance_rate = 1;
+obj_MNIST = BackPropLayer(weightRows,weightColumns,learning_rate,"sigmoid", ...
+    acceptance_rate,true,trainingTimes,isMNIST);
 obj_MNIST.train(images,labels);
 
 % Testing
@@ -27,3 +30,8 @@ for i = 1 : size(testing_images,2)
         correctCount(ex+1) = correctCount(ex+1) + 1;
     end
 end
+accuracy = zeros(1,10);
+for i = 1 : size(correctCount,2)
+    accuracy = correctCount(i) / totalCount(i);
+end
+disp(accuracy);
