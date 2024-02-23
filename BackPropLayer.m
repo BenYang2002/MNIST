@@ -37,12 +37,14 @@ classdef BackPropLayer < handle
         training      % this boolean indicates whether it is training or in 
         % predicion mode. In prediction mode, solution will always be
         % casted
-        
+
         trainingTimes % number of max times going through the training set
 
         MNIST         % boolean that is used to modify output from a vector
         % to a real number. eg. [0,0,1,0,0,0,0,0,0,0] to 3;
 
+        xplots        % array of x coordiante to plot
+        yplots        % array of y coordiante to plot
     end
     methods
         function this = BackPropLayer(weightRow, weightColumn, ...
@@ -98,16 +100,6 @@ classdef BackPropLayer < handle
                     out = i;
                 end
             end
-            
-            total = 0;
-            for i = 1 : size(input,1)
-                total = total + input(i);
-            end
-
-            if total ~= 0
-                input = input / total;
-            end;
-
             if (max > this.acceptance_rate || ~this.training)
                 if (this.MNIST)
                     output = out - 1;
@@ -147,7 +139,7 @@ classdef BackPropLayer < handle
                     ex = expectedM(:,i);
                     this.forward(input);
                     this.backwardUpdate(input,ex);
-                    plotting(this,ex,epoch);
+                    plotting(this,ex,iter);
                     if ~isequal(this.prediction,expectedM(:,i))
                         %disp("error:");
                         %disp("predicion is");
@@ -162,15 +154,22 @@ classdef BackPropLayer < handle
         end
 
         function plotting(this,ex,iter)
+            xlim([iter - 25, iter + 25]); % Set x-axis limits from 0 to 10
+            ylim([0, 1000]); % Set y-axis limits from -1 to 1
             pIndex = (ex - this.prediction)' * (ex - this.prediction);
-            plot(iter, pIndex, 'b-', 'LineWidth', 2);
+            disp("expected " + ex);
+            disp("prediction " + this.prediction);
             disp("Performance index: " + pIndex);
+            this.xplots = [this.xplots,iter];
+            this.yplots = [this.yplots,pIndex];
+            plot(this.xplots, this.yplots, 'ko-');
             if mod(iter, 20) == 0
                 drawnow();
             end
             hold on
-            if mod(iter, 500) == 0
-                hold off
+            if mod(iter, 100) == 0
+                this.xplots = [];
+                this.yplots = [];
             end
         end
 
@@ -226,7 +225,7 @@ classdef BackPropLayer < handle
                 output(i) = 1 / (1 + exp(1)^(-input(i)));
             end
         end
-        
+
         function print(this)
             for i = 1 : size(this.layers,2)     
                 disp("Weight Matrix for layer " + i);
