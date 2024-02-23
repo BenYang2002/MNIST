@@ -98,6 +98,16 @@ classdef BackPropLayer < handle
                     out = i;
                 end
             end
+            
+            total = 0;
+            for i = 1 : size(input,1)
+                total = total + input(i);
+            end
+
+            if total ~= 0
+                input = input / total;
+            end;
+
             if (max > this.acceptance_rate || ~this.training)
                 if (this.MNIST)
                     output = out - 1;
@@ -137,6 +147,7 @@ classdef BackPropLayer < handle
                     ex = expectedM(:,i);
                     this.forward(input);
                     this.backwardUpdate(input,ex);
+                    plotting(this,ex,epoch);
                     if ~isequal(this.prediction,expectedM(:,i))
                         %disp("error:");
                         %disp("predicion is");
@@ -146,15 +157,14 @@ classdef BackPropLayer < handle
                         correct = false;
                     end
                 end
-                ex = expectedM(:, size(inputMatrix, 2));
-                %plotting(this,ex,epoch);
                 epoch = epoch + 1;
             end
         end
 
         function plotting(this,ex,iter)
             pIndex = (ex - this.prediction)' * (ex - this.prediction);
-            plot(iter, pIndex, 'ko-');
+            plot(iter, pIndex, 'b-', 'LineWidth', 2);
+            disp("Performance index: " + pIndex);
             if mod(iter, 20) == 0
                 drawnow();
             end
