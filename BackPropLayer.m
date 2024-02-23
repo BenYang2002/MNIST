@@ -77,6 +77,8 @@ classdef BackPropLayer < handle
                 % this.aLayers{i} is the ath input parameter
                 % from first to end - 1 columns are the weight matrix
                 % with the last column as bias 
+                %disp(size(parameterM(:,1:end-1)));
+                %disp(size(this.feedVect));
                 layerNetInput = parameterM(:,1:end-1) * this.feedVect + ...
                     parameterM(:,end); % net input
                 this.nLayers{i} = layerNetInput;
@@ -128,16 +130,19 @@ classdef BackPropLayer < handle
             correct = false;
             while (~correct && epoch <= this.trainingTimes)
                 correct = true;                   
-                disp("iter: " + epoch);
+                %disp("iter: " + epoch);
                 iter = 1;
+                mse = 0;
                 for i = 1 : size(inputMatrix,2)
-                    disp("iter: " + iter);
+                    %disp("iter: " + iter);
                     iter = iter + 1;
                     input = inputMatrix(:,i);
                     ex = expectedM(:,i);
                     this.forward(input);
                     this.backwardUpdate(input,ex);
+                    pIndex = (ex - this.prediction)' * (ex - this.prediction);
                     if ~isequal(this.prediction,expectedM(:,i))
+                        mse = mse + pIndex(1,1);
                         %disp("error:");
                         %disp("predicion is");
                         %disp(this.prediction);
@@ -146,22 +151,28 @@ classdef BackPropLayer < handle
                         correct = false;
                     end
                 end
-                ex = expectedM(:, size(inputMatrix, 2));
+                %ex = expectedM(:, size(inputMatrix, 2));
                 %plotting(this,ex,epoch);
+                plot(epoch, mse / iter, '-w.');
+                if mod(epoch, 1) == 0
+                    drawnow();
+                end
+                hold on
                 epoch = epoch + 1;
             end
+            title('Performance Index Over i Iterations');
+            xlabel('Number of Iterations');
+            ylabel('Performance Index');
+            hold off
         end
 
         function plotting(this,ex,iter)
             pIndex = (ex - this.prediction)' * (ex - this.prediction);
-            plot(iter, pIndex, 'ko-');
+            plot(iter, pIndex, '-b.');
             if mod(iter, 20) == 0
                 drawnow();
             end
             hold on
-            if mod(iter, 500) == 0
-                hold off
-            end
         end
 
         function backwardUpdate(this, input,expectedOut)
@@ -184,6 +195,8 @@ classdef BackPropLayer < handle
              for i = size(this.layers,2) : -1 : 2
                 netV = cell2mat(this.nLayers(:,i));
                 der = this.takeDeravative(this.transfer,netV);
+                %disp(size(this.layers{i}(:,1:end-1)));
+                %disp(size(prevSense));
                 sCurrent = der * this.layers{i}(:,1:end-1)' * prevSense;
                 % sCurrent is the sensitivity of the current layer
                 prevSense = sCurrent; 
