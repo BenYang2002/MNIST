@@ -49,9 +49,6 @@ classdef BackPropLayer < handle
                 learning_rate,transfer,acceptance, training, ...
                 trainingTimes,MNIST)
             %BACKPROPLAYER Construct an instance of this class
-            %   wMati1 : the first dimension/num of rows of layer i 
-            %   wMati2 : the second dimension/num of columns of layer
-            %   i 
             if (size(weightRow,2) ~= size(weightColumn,2))
                 error("dimention of weightRow and weightColumn " + ...
                     "doesn't match");
@@ -68,6 +65,7 @@ classdef BackPropLayer < handle
             this.trainingTimes = trainingTimes;
             this.MNIST = MNIST;
         end
+
 
         function [output] = forward(this, input)
             %FORWARD
@@ -130,7 +128,7 @@ classdef BackPropLayer < handle
             correct = false;
             while (~correct && epoch <= this.trainingTimes)
                 correct = true;                   
-                disp("epoch: " + epoch);
+                disp("iter: " + epoch);
                 iter = 1;
                 for i = 1 : size(inputMatrix,2)
                     disp("iter: " + iter);
@@ -148,7 +146,21 @@ classdef BackPropLayer < handle
                         correct = false;
                     end
                 end
+                ex = expectedM(:, size(inputMatrix, 2));
+                %plotting(this,ex,epoch);
                 epoch = epoch + 1;
+            end
+        end
+
+        function plotting(this,ex,iter)
+            pIndex = (ex - this.prediction)' * (ex - this.prediction);
+            plot(iter, pIndex, 'ko-');
+            if mod(iter, 20) == 0
+                drawnow();
+            end
+            hold on
+            if mod(iter, 500) == 0
+                hold off
             end
         end
 
@@ -169,14 +181,13 @@ classdef BackPropLayer < handle
              this.sensitivity_Matrix{size(this.layers,2)} = [sM];
              prevSense = this.sensitivity_Matrix{end};
              % calculate all sensitivity
-             for i = size(this.layers,2) : 2
+             for i = size(this.layers,2) : -1 : 2
                 netV = cell2mat(this.nLayers(:,i));
                 der = this.takeDeravative(this.transfer,netV);
                 sCurrent = der * this.layers{i}(:,1:end-1)' * prevSense;
                 % sCurrent is the sensitivity of the current layer
                 prevSense = sCurrent; 
-                this.sensitivity_Matrix{i-1} = ...
-                    sCurrent;
+                this.sensitivity_Matrix{i-1} = sCurrent;
              end
              % now we have the sensitivity matrix 
              % update weight matrix and bias
