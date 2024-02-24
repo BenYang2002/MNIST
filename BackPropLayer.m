@@ -82,13 +82,13 @@ classdef BackPropLayer < handle
                 layerNetInput = parameterM(:,1:end-1) * this.feedVect + ...
                     parameterM(:,end); % net input
                 this.nLayers{i} = layerNetInput;
-                layerOut = this.activationFunc(layerNetInput,this.transfer);
+                layerOut = this.activationFunc(layerNetInput, ...
+                    this.transfer{i});
                 this.feedVect = layerOut;
                 this.aLayers{i+1} = layerOut;
             end
             output = this.aLayers{end};
             output = this.modifyOutput(output);
-            disp(output);
             this.prediction = output;
         end
 
@@ -116,7 +116,8 @@ classdef BackPropLayer < handle
         function der = takeDeravative(this,funcName,input)
             % funcName specify the activation function name
             % Input is the netInput of m layer
-            if (funcName == "sigmoid")
+            %disp(funcName);
+            if (isequal(funcName,"sigmoid"))
                 result = this.sigmoid(input);
                 d = zeros(size(result,1),1);
                 for i = 1 : size(result,1)
@@ -125,6 +126,19 @@ classdef BackPropLayer < handle
                 der = diag(d);
                 return;
             end
+            if (isequal(funcName,"softmax"))
+                sumS = sum(exp(input));
+                denominator = sumS^2;
+                der = zeros(size(input,1),1);
+                for i = 1 : size(input,1)
+                    der(i) = (exp(input(i)) * sumS - exp(2*input(i))) ...
+                        / denominator;
+                end
+                der = diag(der);
+                return;
+            end
+            der = 1;
+            error("no matching transfer function");
         end
 
         function train(this, inputMatrix, expectedM)
@@ -149,11 +163,11 @@ classdef BackPropLayer < handle
                     pIndex = (ex - this.prediction)' * (ex - this.prediction);
                     if ~isequal(this.prediction,expectedM(:,i))
                         mse = mse + pIndex(1,1);
-                        %disp("error:");
-                        %disp("predicion is");
-                        %disp(this.prediction);
-                        %disp("expected output is");
-                        %disp(expectedM(:,i));
+                        disp("error:");
+                        disp("predicion is");
+                        disp(this.prediction);
+                        disp("expected output is");
+                        disp(expectedM(:,i));
                         correct = false;
                     end
                 end
@@ -192,9 +206,8 @@ classdef BackPropLayer < handle
                  % to the vector
              end
              errorOut = expectedOut - cell2mat(this.nLayers(:,end));
-             disp("errorOut" + errorOut);
              netV = cell2mat(this.nLayers(:,end));
-             der = this.takeDeravative(this.transfer,netV);
+             der = this.takeDeravative(this.transfer{end},netV);
              sM = -2 * der * (errorOut); % calculated the sensitivity for
              % the last layer
              this.sensitivity_Matrix{size(this.layers,2)} = [sM];
@@ -202,7 +215,7 @@ classdef BackPropLayer < handle
              % calculate all sensitivity
              for i = size(this.layers,2) : -1 : 2
                 netV = cell2mat(this.nLayers(:,i-1));
-                der = this.takeDeravative(this.transfer,netV);
+                der = this.takeDeravative(this.transfer{i-1},netV);
                 %disp(size(this.layers{i}(:,1:end-1)));
                 %disp(size(prevSense));
                 sCurrent = der * this.layers{i}(:,1:end-1)' * prevSense;
@@ -243,12 +256,9 @@ classdef BackPropLayer < handle
         end
 
         function output = softmax(this,input)
-            total = 0;
+            total = sum(exp(input));
             for i = 1 : size(input,1)
-                total = total + exp(1)^(input(i));
-            end
-            for i = 1 : size(input,1)
-                input(i) = input(i) / total;
+                input(i) = exp(input(i)) / total;
             end
             output = input;
         end
