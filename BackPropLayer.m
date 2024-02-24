@@ -88,6 +88,7 @@ classdef BackPropLayer < handle
             end
             output = this.aLayers{end};
             output = this.modifyOutput(output);
+            disp(output);
             this.prediction = output;
         end
 
@@ -191,6 +192,7 @@ classdef BackPropLayer < handle
                  % to the vector
              end
              errorOut = expectedOut - cell2mat(this.nLayers(:,end));
+             disp("errorOut" + errorOut);
              der = this.takeDeravative(this.transfer,this.prediction);
              sM = -2 * der * (errorOut); % calculated the sensitivity for
              % the last layer
@@ -223,6 +225,10 @@ classdef BackPropLayer < handle
         function output = activationFunc(this,input,funcName)
            if (funcName == "sigmoid")
                output = this.sigmoid(input);
+               return;
+           end
+           if (funcName == "softmax")
+               output = this.softmax(input);
                return;
            end
            output = input;
