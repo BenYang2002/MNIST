@@ -240,6 +240,17 @@ classdef BackPropLayer < handle
                 output(i) = 1 / (1 + exp(1)^(-input(i)));
             end
         end
+
+        function output = softmax(this,input)
+            total = 0;
+            for i = 1 : size(input,1)
+                total = total + exp(1)^(input(i));
+            end
+            for i = 1 : size(input,1)
+                input(i) = input(i) / total;
+            end
+            output = input;
+        end
         
         function print(this)
             for i = 1 : size(this.layers,2)     
