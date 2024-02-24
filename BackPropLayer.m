@@ -117,7 +117,12 @@ classdef BackPropLayer < handle
             % Input is the netInput of m layer
             if (funcName == "sigmoid")
                 result = this.sigmoid(input);
-                der = result' * (1 - result);
+                d = zeros(size(result,1),1);
+                for i = 1 : size(result,1)
+                    d(i) = result(i) * (1 - result(i));
+                end
+                der = diag(d);
+                return;
             end
         end
 
@@ -134,12 +139,12 @@ classdef BackPropLayer < handle
                 iter = 1;
                 mse = 0;
                 for i = 1 : size(inputMatrix,2)
-                    %disp("iter: " + iter);
+                    disp("iter: " + iter);
                     iter = iter + 1;
                     input = inputMatrix(:,i);
                     ex = expectedM(:,i);
                     this.forward(input);
-                    this.backwardUpdate(input,ex);
+                    this.backwardUpdate(ex);
                     pIndex = (ex - this.prediction)' * (ex - this.prediction);
                     if ~isequal(this.prediction,expectedM(:,i))
                         mse = mse + pIndex(1,1);
@@ -153,11 +158,11 @@ classdef BackPropLayer < handle
                 end
                 %ex = expectedM(:, size(inputMatrix, 2));
                 %plotting(this,ex,epoch);
-                plot(epoch, mse / iter, '-w.');
-                if mod(epoch, 1) == 0
-                    drawnow();
-                end
-                hold on
+                %plot(epoch, mse / iter, '-w.');
+                %if mod(epoch, 1) == 0
+                %    drawnow();
+                %end
+                %hold on
                 epoch = epoch + 1;
             end
             title('Performance Index Over i Iterations');
@@ -175,7 +180,7 @@ classdef BackPropLayer < handle
             hold on
         end
 
-        function backwardUpdate(this, input,expectedOut)
+        function backwardUpdate(this,expectedOut)
              %%Compare # of neurons to size of error vector
              % This is the function that updates the weight_matrix based 
              % on a single input
@@ -185,15 +190,15 @@ classdef BackPropLayer < handle
                  expectedOut = exOutMod; % we map the output from a scalar 
                  % to the vector
              end
-             errorOut = expectedOut - this.prediction;
-             der = this.takeDeravative(this.transfer,input);
+             errorOut = expectedOut - cell2mat(this.nLayers(:,end));
+             der = this.takeDeravative(this.transfer,this.prediction);
              sM = -2 * der * (errorOut); % calculated the sensitivity for
              % the last layer
              this.sensitivity_Matrix{size(this.layers,2)} = [sM];
              prevSense = this.sensitivity_Matrix{end};
              % calculate all sensitivity
              for i = size(this.layers,2) : -1 : 2
-                netV = cell2mat(this.nLayers(:,i));
+                netV = cell2mat(this.nLayers(:,i-1));
                 der = this.takeDeravative(this.transfer,netV);
                 %disp(size(this.layers{i}(:,1:end-1)));
                 %disp(size(prevSense));
