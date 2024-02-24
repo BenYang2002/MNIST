@@ -193,7 +193,8 @@ classdef BackPropLayer < handle
              end
              errorOut = expectedOut - cell2mat(this.nLayers(:,end));
              disp("errorOut" + errorOut);
-             der = this.takeDeravative(this.transfer,this.prediction);
+             netV = cell2mat(this.nLayers(:,end));
+             der = this.takeDeravative(this.transfer,netV);
              sM = -2 * der * (errorOut); % calculated the sensitivity for
              % the last layer
              this.sensitivity_Matrix{size(this.layers,2)} = [sM];
