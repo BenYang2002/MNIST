@@ -1,4 +1,4 @@
-classdef BackPropLayer < handle
+    classdef BackPropLayer < handle
     %BACKPROPLAYER Summary of this class goes here
     %   Detailed explanation goes here
     properties
@@ -129,12 +129,18 @@ classdef BackPropLayer < handle
             if (isequal(funcName,"softmax"))
                 sumS = sum(exp(input));
                 denominator = sumS^2;
-                der = zeros(size(input,1),1);
-                for i = 1 : size(input,1)
-                    der(i) = (exp(input(i)) * sumS - exp(2*input(i))) ...
-                        / denominator;
+                der = zeros(size(input,1),size(input,1));
+                for column = 1 : size(input,1)
+                    for row = 1 : size(input,1)
+                        if (row == column)
+                            der(row,column) = (exp(input(row))*sumS - ...
+                                exp(input(row))^2) / denominator;
+                        else
+                            der(row,column) = -1 * (exp(input(row)) * ...
+                            exp(input(column))) / denominator;  
+                        end
+                    end
                 end
-                der = diag(der);
                 return;
             end
             der = 1;
@@ -173,7 +179,7 @@ classdef BackPropLayer < handle
                 end
                 %ex = expectedM(:, size(inputMatrix, 2));
                 %plotting(this,ex,epoch);
-                %plot(epoch, mse / iter, '-w.');
+                plot(iter, mse / iter, 'ko-');
                 %if mod(epoch, 1) == 0
                 %    drawnow();
                 %end
@@ -208,7 +214,7 @@ classdef BackPropLayer < handle
              errorOut = expectedOut - cell2mat(this.nLayers(:,end));
              netV = cell2mat(this.nLayers(:,end));
              der = this.takeDeravative(this.transfer{end},netV);
-             sM = -2 * der * (errorOut); % calculated the sensitivity for
+             sM = -2 * der * errorOut; % calculated the sensitivity for
              % the last layer
              this.sensitivity_Matrix{size(this.layers,2)} = [sM];
              prevSense = this.sensitivity_Matrix{end};
