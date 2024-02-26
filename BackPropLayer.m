@@ -50,9 +50,12 @@
         xplots        % array of x coordiante to plot
         yplots        % array of y coordiante to plot
 
-        mini_batchUp % a boolean that activates the mini batch update
+        mini_batchUp = true % a boolean that activates the mini batch update
         % the mini batch number is decided internally ( 1% of the total
         % training data )
+
+        mini_batchSize = 500;
+
     end
     methods
         function this = BackPropLayer(weightRow, weightColumn, ...
@@ -176,6 +179,31 @@
                 iter = 1;
                 mse = 0;
                 if ( this.mini_batchUp )
+                    remaining = 0;
+                    for i = 1 : ( size(inputMatrix,2) / ...
+                            this.mini_batchSize )
+                        start = (i-1) * this.mini_batchSize + 1;
+                        endIndex = i * this.mini_batchSize;
+                        expectedOut = expectedM(:, start : endIndex );
+                        remaining = i * this.mini_batchSize + 1;
+                        predictions = zeros(10, this.mini_batchSize);
+                        for i = start : endIndex
+                            input = inputMatrix(:,i);
+                            predictions(:,i) = this.forward(input);
+                        end
+                        miniBatchUpdate(this,expectedOut,predictions);
+                    end
+                    if (remaining <= this.trainingSize) 
+                        start = remaining;
+                        endIndex = size(inputMatrix,2);
+                        expectedOut = inputMatrix(:,start : endIndex);
+                        predictions = zeros(10, endIndex - start + 1);
+                        for i = start : endIndex
+                            input = inputMatrix(:,i);
+                            predictions(:,i) = this.forward(input);
+                        end
+                        miniBatchUpdate(this,expectedOut,predictions);
+                    end
                 else
                     for i = 1 : size(inputMatrix,2)
                         disp("iter: " + iter);
@@ -185,7 +213,8 @@
                         this.forward(input);
                         this.backwardUpdate(ex);
                         ex = outputToVec(this,ex);
-                        pIndex = (ex - this.prediction)' * (ex - this.prediction);
+                        pIndex = (ex - this.prediction)' * ...
+                            (ex - this.prediction);
                         if (mod(iter,(this.trainingSize / 100)) == 0)
                             plotting(this,ex,iter,epoch);
                         end
@@ -213,11 +242,13 @@
             ylabel('Performance Index');
             hold off
         end
+
         function plotting(this,ex,iter,epoch)
             if (this.plottingEpoch ~= epoch)
                 this.plottingEpoch = epoch;
                 this.xplots = [];
                 this.yplots = [];
+                hold off;
             end
             xlim([iter - ( this.trainingSize / 10 ), ...
                 iter + ( this.trainingSize / 10 )]); 
@@ -243,13 +274,16 @@
             % to the vector
         end
 
-        function miniBatchUpdate(this,expectedOut)
+        function miniBatchUpdate(this,expectedOut,predictions)
              if (this.MNIST)
                  temp = zeros(10,size(expectedOut,2));
                  for i = 1 : size(expectedOut,2)
-                     temp(i) = outputToVec(this,expectedOut(i));
+                     temp(:,i) = outputToVec(this,expectedOut(i));
                  end
+                 expectedOut = temp;
+                 disp("done");
              end
+             
         end
 
         function backwardUpdate(this,expectedOut)
