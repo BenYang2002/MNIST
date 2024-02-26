@@ -90,9 +90,14 @@
             output = this.aLayers{end};
             output = this.modifyOutput(output);
             this.prediction = output;
+            this.aLayers{end} = this.prediction;
         end
 
         function output = modifyOutput(this,input)
+            if (this.training)
+                output = input;
+                return;
+            end
             max = 0;
             out = 0;
             for i = 1:size(input,1)
@@ -169,6 +174,10 @@
                     pIndex = (ex - this.prediction)' * (ex - this.prediction);
                     if ~isequal(this.prediction,expectedM(:,i))
                         mse = mse + pIndex(1,1);
+                        mseIter = pIndex;
+                        disp("average mse over " + iter + " iter is " ...
+                            + (mse / iter));
+                        disp("mse of iter: " + iter + " is " + mseIter);
                         disp("error:");
                         disp("predicion is");
                         disp(this.prediction);
@@ -179,7 +188,7 @@
                 end
                 %ex = expectedM(:, size(inputMatrix, 2));
                 %plotting(this,ex,epoch);
-                plot(iter, mse / iter, 'ko-');
+                %plot(iter, mse / iter, 'ko-');
                 %if mod(epoch, 1) == 0
                 %    drawnow();
                 %end
@@ -211,7 +220,7 @@
                  expectedOut = exOutMod; % we map the output from a scalar 
                  % to the vector
              end
-             errorOut = expectedOut - cell2mat(this.nLayers(:,end));
+             errorOut = expectedOut - cell2mat(this.aLayers(:,end));
              netV = cell2mat(this.nLayers(:,end));
              der = this.takeDeravative(this.transfer{end},netV);
              sM = -2 * der * errorOut; % calculated the sensitivity for
