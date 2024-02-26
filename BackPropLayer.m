@@ -187,22 +187,48 @@
                         expectedOut = expectedM(:, start : endIndex );
                         remaining = i * this.mini_batchSize + 1;
                         predictions = zeros(10, this.mini_batchSize);
+                        A = cell(1,size(this.layers,2)+1);   
+                        % holds the output matrix for all layers
+                        % and all element in the batch
+                        N = {};
+                        % N{i} holds the netinput for ith layer
+                        % N{i,j} holds the netinput for ith layer and 
+                        % jth element
+
                         for i = start : endIndex
                             input = inputMatrix(:,i);
                             predictions(:,i) = this.forward(input);
+                            for n = 1 : size(this.nLayers,2)
+                                N{n} = [N{n}(:,1:end),this.nLayers{n}];
+                            end
+                            for j = 1 : size(this.aLayers,2)
+                                A{j} = [A{j}(:,1:end),this.aLayers{j}];
+                            end
                         end
-                        miniBatchUpdate(this,expectedOut,predictions);
+                        miniBatchUpdate(this,expectedOut,predictions,A,N);
                     end
                     if (remaining <= this.trainingSize) 
                         start = remaining;
+                        if (start == 0)
+                            start = 1; % handle the case when total 
+                            % training size is smaller than the batch
+                        end
                         endIndex = size(inputMatrix,2);
                         expectedOut = inputMatrix(:,start : endIndex);
                         predictions = zeros(10, endIndex - start + 1);
+                        A = cell(1,size(this.layers,2)+1);
+                        N = {};
                         for i = start : endIndex
                             input = inputMatrix(:,i);
                             predictions(:,i) = this.forward(input);
+                            for n = 1 : size(this.nLayers,2)
+                                N{n} = [N{n}(:,1:end),this.nLayers{n}];
+                            end
+                            for j = 1 : size(this.aLayers,2)
+                                A{j} = [A{j}(:,1:end),this.aLayers{j}];
+                            end
                         end
-                        miniBatchUpdate(this,expectedOut,predictions);
+                        miniBatchUpdate(this,expectedOut,predictions,A,N);
                     end
                 else
                     for i = 1 : size(inputMatrix,2)
@@ -274,14 +300,54 @@
             % to the vector
         end
 
-        function miniBatchUpdate(this,expectedOut,predictions)
+        function miniBatchUpdate(this,expectedOut,predictions,A,N)
              if (this.MNIST)
+                 batchSize = size(predictions,2);
+                 S = {}; 
+                 FMmatrix = cell(size(predictions,2),1);
+                 % holds the sensitivity matrix for all
+                 % layers and for all element in the batch
+                 TminuxA = zeros(size(predictions,1),size(predictions,2));
+                 % holds the matrix of t -a 
                  temp = zeros(10,size(expectedOut,2));
                  for i = 1 : size(expectedOut,2)
                      temp(:,i) = outputToVec(this,expectedOut(i));
                  end
                  expectedOut = temp;
-                 disp("done");
+                 TminuxA = expectedOut - predictions;
+                 % now proceed to calculate deravative
+                 for i = 1 : size(expectedOut,2) % LOOP THROUGH EACH ELE
+                     errorOut = TminuxA(:,i);
+                     netV = cell2mat(N{end,i});
+                     der = this.takeDeravative(this.transfer{end},netV);
+                     sM = -2 * der * errorOut; % calculated the sensitivity for
+                     % the last layer
+                     s_Matrix{size(this.layers,2)} = [sM];
+                     prevSense = s_Matrix{end};
+                     % calculate all sensitivity
+                     for j = size(this.layers,2) : -1 : 2
+                        netV = cell2mat(N(j-1,i));
+                        der = this.takeDeravative(this.transfer{j-1},netV);
+                        sCurrent = der * this.layers{j}(:,1:end-1)' * prevSense;
+                        % sCurrent is the sensitivity of the current layer
+                        prevSense = sCurrent; 
+                        s_Matrix{j-1} = sCurrent;
+                     end
+                     S{i} = s_Matrix;
+                 end
+                 % S the sensitivity cell
+                 % S{i} holds the sensitivity matrix for ith element
+                 % S{i}(:,j) holds the sensitivity vec for the jth
+                 % layer
+                 % start to update
+                 for i = 1 : size(this.layers)
+                     decre = 0;
+                     for j = 1 : batchSize
+                        decre = S{i} * (A{i})'
+                     end
+                     this.layers{i} = this.layers{i} - ...
+                        (this.learning_rate / batchSize) * decre;
+                 end
              end
              
         end
