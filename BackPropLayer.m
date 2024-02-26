@@ -43,6 +43,8 @@
         MNIST         % boolean that is used to modify output from a vector
         % to a real number. eg. [0,0,1,0,0,0,0,0,0,0] to 3;
 
+        xplots        % array of x coordiante to plot
+        yplots        % array of y coordiante to plot
     end
     methods
         function this = BackPropLayer(weightRow, weightColumn, ...
@@ -173,6 +175,7 @@
                     this.backwardUpdate(ex);
                     ex = outputToVec(this,ex);
                     pIndex = (ex - this.prediction)' * (ex - this.prediction);
+                    %plotting(this,ex,iter);
                     if ~isequal(this.prediction,expectedM(:,i))
                         mse = mse + pIndex(1,1);
                         mseIter = pIndex;
@@ -189,13 +192,6 @@
                         correct = false;
                     end
                 end
-                %ex = expectedM(:, size(inputMatrix, 2));
-                %plotting(this,ex,epoch);
-                %plot(iter, mse / iter, 'ko-');
-                %if mod(epoch, 1) == 0
-                %    drawnow();
-                %end
-                %hold on
                 epoch = epoch + 1;
             end
             title('Performance Index Over i Iterations');
@@ -205,12 +201,23 @@
         end
 
         function plotting(this,ex,iter)
+            xlim([iter - 25, iter + 25]); % Set x-axis limits from 0 to 10
+            ylim([0, 1.5]); % Set y-axis limits from -1 to 1
             pIndex = (ex - this.prediction)' * (ex - this.prediction);
-            plot(iter, pIndex, '-b.');
+            disp("expected " + ex);
+            disp("prediction " + this.prediction);
+            disp("Performance index: " + pIndex);
+            this.xplots = [this.xplots,iter];
+            this.yplots = [this.yplots,pIndex];
+            plot(this.xplots, this.yplots, 'ko-');
             if mod(iter, 20) == 0
                 drawnow();
             end
             hold on
+            if mod(iter, 100) == 0
+                this.xplots = [];
+                this.yplots = [];
+            end
         end
 
         function output = outputToVec(this,expectedOut)
