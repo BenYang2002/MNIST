@@ -171,10 +171,13 @@
                     ex = expectedM(:,i);
                     this.forward(input);
                     this.backwardUpdate(ex);
+                    ex = outputToVec(this,ex);
                     pIndex = (ex - this.prediction)' * (ex - this.prediction);
                     if ~isequal(this.prediction,expectedM(:,i))
                         mse = mse + pIndex(1,1);
                         mseIter = pIndex;
+                        disp("ex is " + ex);
+                        disp("prediction is " + this.prediction);
                         disp("average mse over " + iter + " iter is " ...
                             + (mse / iter));
                         disp("mse of iter: " + iter + " is " + mseIter);
@@ -210,15 +213,19 @@
             hold on
         end
 
+        function output = outputToVec(this,expectedOut)
+            exOutMod = zeros(10,1);
+            exOutMod(expectedOut+1) = 1; 
+            output = exOutMod; % we map the output from a scalar 
+            % to the vector
+        end
+
         function backwardUpdate(this,expectedOut)
              %%Compare # of neurons to size of error vector
              % This is the function that updates the weight_matrix based 
              % on a single input
              if (this.MNIST)
-                 exOutMod = zeros(10,1);
-                 exOutMod(expectedOut+1) = 1; 
-                 expectedOut = exOutMod; % we map the output from a scalar 
-                 % to the vector
+                 expectedOut = outputToVec(this,expectedOut);
              end
              errorOut = expectedOut - cell2mat(this.aLayers(:,end));
              netV = cell2mat(this.nLayers(:,end));
