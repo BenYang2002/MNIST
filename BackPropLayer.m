@@ -40,11 +40,19 @@
         
         trainingTimes % number of max times going through the training set
 
+        trainingSize  % size of the training set
+
+        plottingEpoch
+
         MNIST         % boolean that is used to modify output from a vector
         % to a real number. eg. [0,0,1,0,0,0,0,0,0,0] to 3;
 
         xplots        % array of x coordiante to plot
         yplots        % array of y coordiante to plot
+
+        mini_batchUp % a boolean that activates the mini batch update
+        % the mini batch number is decided internally ( 1% of the total
+        % training data )
     end
     methods
         function this = BackPropLayer(weightRow, weightColumn, ...
@@ -161,35 +169,41 @@
             % expectedM each column is one corresponding expected output
             epoch = 1 ;
             correct = false;
+            this.trainingSize = size(inputMatrix,2);
             while (~correct && epoch <= this.trainingTimes)
                 correct = true;                   
                 %disp("iter: " + epoch);
                 iter = 1;
                 mse = 0;
-                for i = 1 : size(inputMatrix,2)
-                    disp("iter: " + iter);
-                    iter = iter + 1;
-                    input = inputMatrix(:,i);
-                    ex = expectedM(:,i);
-                    this.forward(input);
-                    this.backwardUpdate(ex);
-                    ex = outputToVec(this,ex);
-                    pIndex = (ex - this.prediction)' * (ex - this.prediction);
-                    %plotting(this,ex,iter);
-                    if ~isequal(this.prediction,expectedM(:,i))
-                        mse = mse + pIndex(1,1);
-                        mseIter = pIndex;
-                        disp("ex is " + ex);
-                        disp("prediction is " + this.prediction);
-                        disp("average mse over " + iter + " iter is " ...
-                            + (mse / iter));
-                        disp("mse of iter: " + iter + " is " + mseIter);
-                        disp("error:");
-                        disp("predicion is");
-                        disp(this.prediction);
-                        disp("expected output is");
-                        disp(expectedM(:,i));
-                        correct = false;
+                if ( this.mini_batchUp )
+                else
+                    for i = 1 : size(inputMatrix,2)
+                        disp("iter: " + iter);
+                        iter = iter + 1;
+                        input = inputMatrix(:,i);
+                        ex = expectedM(:,i);
+                        this.forward(input);
+                        this.backwardUpdate(ex);
+                        ex = outputToVec(this,ex);
+                        pIndex = (ex - this.prediction)' * (ex - this.prediction);
+                        if (mod(iter,(this.trainingSize / 100)) == 0)
+                            plotting(this,ex,iter,epoch);
+                        end
+                        if ~isequal(this.prediction,expectedM(:,i))
+                            mse = mse + pIndex(1,1);
+                            mseIter = pIndex;
+                            disp("ex is " + ex);
+                            disp("prediction is " + this.prediction);
+                            disp("average mse over " + iter + " iter is " ...
+                                + (mse / iter));
+                            disp("mse of iter: " + iter + " is " + mseIter);
+                            disp("error:");
+                            disp("predicion is");
+                            disp(this.prediction);
+                            disp("expected output is");
+                            disp(expectedM(:,i));
+                            correct = false;
+                        end
                     end
                 end
                 epoch = epoch + 1;
@@ -199,9 +213,15 @@
             ylabel('Performance Index');
             hold off
         end
-
-        function plotting(this,ex,iter)
-            xlim([iter - 25, iter + 25]); % Set x-axis limits from 0 to 10
+        function plotting(this,ex,iter,epoch)
+            if (this.plottingEpoch ~= epoch)
+                this.plottingEpoch = epoch;
+                this.xplots = [];
+                this.yplots = [];
+            end
+            xlim([iter - ( this.trainingSize / 10 ), ...
+                iter + ( this.trainingSize / 10 )]); 
+            % Set x-axis limits from 0 to 10
             ylim([0, 1.5]); % Set y-axis limits from -1 to 1
             pIndex = (ex - this.prediction)' * (ex - this.prediction);
             disp("expected " + ex);
@@ -214,10 +234,6 @@
                 drawnow();
             end
             hold on
-            if mod(iter, 100) == 0
-                this.xplots = [];
-                this.yplots = [];
-            end
         end
 
         function output = outputToVec(this,expectedOut)
@@ -225,6 +241,15 @@
             exOutMod(expectedOut+1) = 1; 
             output = exOutMod; % we map the output from a scalar 
             % to the vector
+        end
+
+        function miniBatchUpdate(this,expectedOut)
+             if (this.MNIST)
+                 temp = zeros(10,size(expectedOut,2));
+                 for i = 1 : size(expectedOut,2)
+                     temp(i) = outputToVec(this,expectedOut(i));
+                 end
+             end
         end
 
         function backwardUpdate(this,expectedOut)
