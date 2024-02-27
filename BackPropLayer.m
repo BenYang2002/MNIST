@@ -179,19 +179,21 @@
                 iter = 1;
                 mse = 0;
                 if ( this.mini_batchUp )
+                    disp("epoch " + epoch);
+                    correct = false;
                     remaining = 0;
                     for i = 1 : ( size(inputMatrix,2) / ...
                             this.mini_batchSize )
                         start = (i-1) * this.mini_batchSize + 1;
                         endIndex = i * this.mini_batchSize;
                         expectedOut = expectedM(:, start : endIndex );
-                        remaining = i * this.mini_batchSize + 1;
+                        remaining = endIndex + 1;
                         predictions = zeros(10, this.mini_batchSize);
-                        A = cell(1,size(this.layers,2)+1);   
-                        % holds the output matrix for all layers
-                        % and all element in the batch
+                        A = cell(1,size(this.layers,2)+1);  
+                        % A is a 1D array
+                        % A{i} holds the output matrix for ith element
                         N = cell(1,size(this.layers,2));
-                        % N{i} holds the netinput for ith layer
+                        % N{i} holds the netinput matrix for ith layer
                         % N{i,j} holds the netinput for ith layer and 
                         % jth element
                         disp("start " + start);
@@ -206,6 +208,7 @@
                                 A{j} = [A{j}(:,1:end),this.aLayers{j}];
                             end
                         end
+                        disp(predictions);
                         miniBatchUpdate(this,expectedOut,predictions,A,N);
                     end
                     if (remaining <= this.trainingSize) 
@@ -221,12 +224,12 @@
                         N = cell(1,size(this.layers,2));
                         for i = start : endIndex
                             input = inputMatrix(:,i);
-                            predictions(:,i) = this.forward(input);
+                            predictions(:,i - start + 1) = this.forward(input);
                             for n = 1 : size(this.nLayers,2)
-                                N{n} = [N{n},this.nLayers{n}];
+                                N{n} = [N{n}(:,1:end),this.nLayers{n}];
                             end
                             for j = 1 : size(this.aLayers,2)
-                                A{j} = [A{j},this.aLayers{j}];
+                                A{j} = [A{j}(:,1:end),this.aLayers{j}];
                             end
                         end
                         miniBatchUpdate(this,expectedOut,predictions,A,N);
@@ -305,9 +308,9 @@
              if (this.MNIST)
                  batchSize = size(predictions,2);
                  S = cell(1,size(this.layers,2)); 
-                 FMmatrix = cell(size(predictions,2),1);
                  % holds the sensitivity matrix for all
                  % layers and for all element in the batch
+                 FMmatrix = cell(1,size(predictions,2));
                  TminuxA = zeros(size(predictions,1),size(predictions,2));
                  % holds the matrix of t -a 
                  temp = zeros(10,size(expectedOut,2));
@@ -348,7 +351,7 @@
                         (this.learning_rate / batchSize) * decre;
                      sS = zeros(size(S{i},1),1);
                      for j = 1 : size(S{i},2)
-                        sS = S{i}(:,j);
+                        sS = sS + S{i}(:,j);
                      end
                      bias = bias - (this.learning_rate / batchSize) * sS;
                      this.layers{i} = [weights,bias];
